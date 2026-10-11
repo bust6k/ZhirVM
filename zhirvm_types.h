@@ -23,7 +23,7 @@ typedef struct ASTNode {
     } while_node;
     struct {
       char* ident;
-      struct Vector* args;
+      Vector* args;
       struct ASTNode* body;
     } func_node;
     struct {

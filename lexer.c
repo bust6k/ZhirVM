@@ -23,7 +23,7 @@ int is_space(char c) {
     return c == ' '  || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
 }
 
-int is_number(char* buf) {
+int is_number_buf(char* buf) {
     for(int i = 0;i < strlen(buf);i++) {
         if(!is_digit(buf[i])) return 0;
     }
@@ -109,7 +109,7 @@ char* read_string(void) {
 int is_identifier_buf(char* buf) {
     for(int i = 0;i < strlen(buf);i++) {
         if(is_space(buf[i])) return 0;
-        if(i == 0 && is_number(buf)) return 0;
+        if(i == 0 && is_number_buf(buf)) return 0;
         if(!is_alpha((int)buf[i])) return 0;
     }
     return 1;

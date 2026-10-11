@@ -1,14 +1,11 @@
-#include "zhirvm_types.c"
+#include "zhirvm_types.h"
 #include "../lib/string.h"
 #include "../lib/zhirtypes.h"
+#include "init.c"
 
 #define INT_MAX 2147483647
 #define NOT_ACTUAL -1
 
-void*  (*kalloc)(u32 size);
-void   (*printf)(char* fmt,...);
-void   (*print_color)(char* string,u32 color);
-struct file* (*open)(char disk_letter,char* path);
 Token* lex(struct file* file);
 
 int read_count = 0;
@@ -109,11 +106,11 @@ char* read_string(void) {
     return token;
 }
 
-int is_identifier(char* buf) {
+int is_identifier_buf(char* buf) {
     for(int i = 0;i < strlen(buf);i++) {
-        if(is_space(buf[i])) LOGE("you're so stupid!");
-        if(i == 0 && is_number(buf)) LOGE("I wanna fuck your asshole!");
-        if(!is_alpha((int)buf[i])) LOGE("I think you should go to hospital.");
+        if(is_space(buf[i])) return 0;
+        if(i == 0 && is_number(buf)) return 0;
+        if(!is_alpha((int)buf[i])) return 0;
     }
     return 1;
 }
@@ -122,11 +119,12 @@ int is_identifier(char* buf) {
 int sti(char* buf) {
     int r = 0;
     for(int i = 0;i < strlen(buf);i++) {
-        if(!is_digit(buf[i])) LOGE("you can't hack the system!");
-        if(r > (INT_MAX - (buf[i] - '0') / 10)) LOGE("I have care you that it's dangerous...");
+        if(!is_digit(buf[i])) return NOT_ACTUAL;
+        if(r > (INT_MAX - (buf[i] - '0') / 10)) return NOT_ACTUAL;
         r = r * 10 + (buf[i] - '0');
     }
-    return r;
+
+   return r;
 }
 
 char* get_string(char* buf) {
@@ -160,26 +158,27 @@ Token* do_lex(void) {
     if(!strcmp(tok,"u32")) return make_token_keyword(u32_type);
     else if(!strcmp(tok,"u16")) return make_token_keyword(u16_type);
     else if(!strcmp(tok,"u8")) return make_token_keyword(u8_type);
-    else if(!strcmp(tok,"str")) return make_token_keyword(string_as_type);
+    else if(!strcmp(tok,"str")) return make_token_keyword(string_type);
     else if(!strcmp(tok,"fp")) return make_token_keyword(float_type);
-    else if(!strcmp(tok,"if")) return make_token_keyword(if_statement);
-    else if(!strcmp(tok,"udf")) return make_token_keyword(udf_statement);
-    else if(!strcmp(tok,"whl")) return make_token_keyword(while_statement);
-    else if(!strcmp(tok,"else")) return make_token_keyword(else_statement);
-    else if(!strcmp(tok,"ret")) return make_token_keyword(return_statement);
-    else if(!strcmp(tok,"var")) return make_token_keyword(var_statement);
-    else if(!strcmp(tok,"varar")) return make_token_keyword(varar_statement);
-    else if(!strcmp(tok,"class")) return make_token_keyword(class_statement);
-    else if(!strcmp(tok,"reg")) return make_token_keyword(register_statement);
-    else if(!strcmp(tok,"goto")) return make_token_keyword(goto_statement);
+    else if(!strcmp(tok,"if")) return make_token_keyword(if_keyword);
+    else if(!strcmp(tok,"udf")) return make_token_keyword(udf_keyword);
+    else if(!strcmp(tok,"whl")) return make_token_keyword(while_keyword);
+    else if(!strcmp(tok,"else")) return make_token_keyword(else_keyword);
+    else if(!strcmp(tok,"ret")) return make_token_keyword(return_keyword);
+    else if(!strcmp(tok,"var")) return make_token_keyword(var_keyword);
+    else if(!strcmp(tok,"varar")) return make_token_keyword(varar_keyword);
+    else if(!strcmp(tok,"call")) return make_token_keyword(call_keyword);
+    else if(!strcmp(tok,"class")) return make_token_keyword(class_keyword);
+    else if(!strcmp(tok,"reg")) return make_token_keyword(register_keyword);
+    else if(!strcmp(tok,"goto")) return make_token_keyword(goto_keyword);
     else if(!strcmp(tok,"==")) return make_token_operation(equals);
     else if(!strcmp(tok,">")) return make_token_operation(greater_than);
     else if(!strcmp(tok,"<")) return make_token_operation(lesser_than);
     else if(!strcmp(tok,"=")) return make_token_operation(assign);
-    else if(!strcmp(tok,"^")) return make_token_operation(xor);
-    else if(!strcmp(tok,"~")) return make_token_operation(not);
-    else if(!strcmp(tok,"&")) return make_token_operation(and);
-    else if(!strcmp(tok,"|")) return make_token_operation(or);
+    else if(!strcmp(tok,"^")) return make_token_operation(bit_xor);
+    else if(!strcmp(tok,"~")) return make_token_operation(bit_not);
+    else if(!strcmp(tok,"&")) return make_token_operation(bit_and);
+    else if(!strcmp(tok,"|")) return make_token_operation(bit_or);
     else if(!strcmp(tok,"(")) return make_token_operation(left_paren);
     else if(!strcmp(tok,")")) return make_token_operation(right_paren);
     else if(!strcmp(tok,"/")) return make_token_operation(divide);
@@ -190,10 +189,10 @@ Token* do_lex(void) {
     else if(!strcmp(tok,"}")) return make_token_operation(right_brace);
     else if(is_number(tok)) {
         int num = sti(tok);
-        return make_token_number(num);
+	if(num != NOT_ACTUAL) return make_token_number(num);
     }
-    else if(is_identifier(tok)) {
-        char* idt = get_identifier(tok+1);
+    else if(is_identifier_buf(tok)) {
+	char* idt = get_identifier(tok);
 	return make_token_identifier(idt);
     }
     else if(tok[0] == '"') {
@@ -203,21 +202,6 @@ Token* do_lex(void) {
 
     return make_token_null();
 }
-
-INIT void init(void* _resolve_function(char* name)) {
-    kalloc = _resolve_function("_alloc");
-    printf = _resolve_function("_printf");
-    print_color = _resolve_function("_print_color");
-    open = _resolve_function("_open");
-
-    struct file* foo = open('A',"./vmeste_mi_edynyi.zo");
-    Token* f = lex(foo);
-
-    LOGI("%u",f->keyword.kind);
-
-    LOGI("HELLO FROM PIECE OF SHIT!");
-}
-
 
 Token* lex(struct file* file) {
     static int loaded = 0;

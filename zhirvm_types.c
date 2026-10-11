@@ -261,3 +261,31 @@ typedef enum {
     dot,
     colon
 } zhirvm_tokens;
+
+typedef struct Token {
+    union {
+        struct {
+            int val;
+        } number;
+
+        struct {
+            char* name;
+        } identifier;
+
+        struct {
+            char* val;
+        } string;
+
+        struct {
+            int kind;
+        } keyword;
+        //under operation means every operation(for example, and,or,xor....) and every action and sign(left_brace,left_paren,comma,etc..)
+        struct {
+            int op;
+        } operation;
+        //under null means that something went wrong during lexing
+        struct {
+            int not_actual;
+        } null;
+    };
+} Token; 

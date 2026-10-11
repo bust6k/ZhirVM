@@ -9,9 +9,12 @@ reg class bar {
 u32 class.
 
 }
+udp foo() {
+
+}
 
 Keywords are:
-if,while,else,ret,var,varar,udf,class,reg,goto
+if,whl,else,ret,var,varar,udf,udp,class,reg,goto
 Typewords are:
 u32,u16,u8,str,fp
 Signs are:

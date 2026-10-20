@@ -1,75 +1,112 @@
+#ifndef ZHIRVM_TYPES_H
+#define ZHIRVM_TYPES_H
+
 #include "../lib/zhirtypes.h"
 #include "../lib/string.h"
 #include "vector.h"
 
 typedef struct ASTNode {
-  int type;
-  
-  union {
-    struct {
-      char* name;
-      struct ASTNode* value;
-    } assign;
-    struct {
-      struct ASTNode* name;
-      struct ASTNode* value;
-    } ast_assign;
-    struct {
-      struct ASTNode *cond, *then, *else_;
-      int is_elif;
-    } if_node;
-    struct {
-      struct ASTNode *cond, *body;
-    } while_node;
-    struct {
-      char* ident;
-      Vector* args;
-      struct ASTNode* body;
-    } func_node;
-    struct {
-      struct ASTNode* value;
-    } return_node;
-    struct {
-      int value;
-    } number;
-    struct {
-      char* value;
-    } string;
-    struct {
-      char* op;
-      struct ASTNode *left, *right;
-    } binop;
-    struct {
-      struct ASTNode* expr;
-    } paren_expr;
-    struct {
-      char* op;
-      struct ASTNode* operand;
-    } unop;
-    struct {
-      struct ASTNode* name;
-      struct Vector* args;
-    } call_node;
-    struct {
-    char* float_num;
-    } float_number_node;
-  };
+    int type;
+
+    union {
+        struct {
+            char* name;
+            struct ASTNode* value;
+        } assign;
+
+        struct {
+            struct ASTNode* name;
+            struct ASTNode* value;
+        } ast_assign;
+
+        struct {
+            struct ASTNode *cond, *then, *else_;
+            int is_elif;
+        } if_node;
+
+        struct {
+            struct ASTNode *cond, *body;
+        } while_node;
+
+        struct {
+            char* ident;
+            Vector* args;
+            struct ASTNode* body;
+            int is_proc;   // 0 = udf (must return), 1 = udp (must not return)
+        } func_node;
+
+        struct {
+            struct ASTNode* value;
+        } return_node;
+
+        struct {
+            Vector* stmts;
+        } block_node;
+
+        struct {
+            int value;
+        } number;
+
+        struct {
+            char* value;
+        } string;
+
+        struct {
+            char* op;
+            struct ASTNode *left, *right;
+        } binop;
+
+        struct {
+            struct ASTNode* expr;
+        } paren_expr;
+
+        struct {
+            char* op;
+            struct ASTNode* operand;
+        } unop;
+
+        struct {
+            struct ASTNode* name;
+            Vector* args;
+        } call_node;
+
+        struct {
+            float float_num;
+        } float_number_node;
+
+        struct {
+            char* name;
+        } ident;
+
+        struct {
+            struct ASTNode* base;
+            struct ASTNode* index;
+        } index_node;
+
+        struct {
+            char* name;
+        } varar;
+    };
 } ASTNode;
 
 typedef enum ASTNodeKind {
-  AST_ASSIGN,
-  AST_EXPR_ASSIGN,
-  AST_IF,
-  AST_WHILE,
-  AST_RETURN,
-  AST_NUMBER,
-  AST_FL_NUMBER,
-  AST_STRING,
-  AST_BINOP,
-  AST_PAREN_OP,
-  AST_UNOP,
-  AST_FUNC,
-  AST_CALL
+    AST_ASSIGN,
+    AST_EXPR_ASSIGN,
+    AST_IF,
+    AST_WHILE,
+    AST_RETURN,
+    AST_BLOCK,
+    AST_NUMBER,
+    AST_FL_NUMBER,
+    AST_STRING,
+    AST_BINOP,
+    AST_PAREN_OP,
+    AST_UNOP,
+    AST_FUNC,
+    AST_CALL,
+    AST_IDENT,
+    AST_INDEX,
+    AST_VARAR
 } ASTNodeKind;
 
 typedef enum {
@@ -83,6 +120,7 @@ typedef enum {
     var_keyword,
     varar_keyword,
     udf_keyword,
+    udp_keyword,
     class_keyword,
     register_keyword,
     goto_keyword,
@@ -123,33 +161,22 @@ typedef enum {
     comma,
     dot,
     colon,
-    number
+    number,
+    string,
+    token_eof
 } ZhirVMTokens;
 
 typedef struct Token {
+    int kind;                
+
     union {
-        struct {
-            int val;
-        } number;
-
-        struct {
-            char* name;
-        } identifier;
-
-        struct {
-            char* val;
-        } string;
-
-        struct {
-            int kind;
-        } keyword;
-        //under operation means every operation(for example, and,or,xor....) and every action and sign(left_brace,left_paren,comma,etc..)
-        struct {
-            int op;
-        } operation;
-        //under null means that something went wrong during lexing
-        struct {
-            int not_actual;
-        } null;
+        struct { int  val; }          number;
+        struct { char* name; }        identifier;
+        struct { char* val;  }        string;
+        struct { int  kind; }         keyword;
+        struct { int  op;   }         operation;
+        struct { int  not_actual; }   null;
     };
-} Token; 
+} Token;
+
+#endif

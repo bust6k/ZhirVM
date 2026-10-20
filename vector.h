@@ -1,9 +1,11 @@
-#include "../lib/string.h"
+#ifndef VECTOR_H
+#define VECTOR_H
 #include "../lib/zhirtypes.h"
+#include "../lib/string.h"
 
 #define MIN_SIZE 8
 
-typedef struct {
+typedef struct  Vector{
     void **body;
     int len;
     int nalloc;
@@ -22,5 +24,4 @@ void *vec_tail(Vector *vec);
 Vector *vec_reverse(Vector *vec);
 void *vec_body(Vector *vec);
 int vec_len(Vector *vec);
-
-
+#endif

@@ -1,5 +1,5 @@
 #include "vector.h"
-#include "init.c"
+#include "lexer.h"
 
 void* malloc(int size) {
 return kalloc(size);

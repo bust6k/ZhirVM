@@ -1,6 +1,7 @@
 #include "parse.h"
 #include "lexer.h"
 #include "vector.h"
+#include "builtins.h"
 
 Vector* nodes;
 
@@ -15,7 +16,7 @@ AN* make_ast_assign(char* name, AN* val) {
     n->type = AST_ASSIGN;
     n->assign.name = name;
     n->assign.value = val;
-    LOGI("but it MAKES A SENSE! %x",n);
+    
     return n;
 }
 
@@ -185,18 +186,33 @@ char* op_str(int kind) {
         case minus:        return "-";
         case multiply:     return "*";
         case divide:       return "/";
-        case equals:       return "==";
-        case dont_equal:   return "!=";
-        case greater_than: return ">";
-        case lesser_than:  return "<";
-        case bit_xor:      return "^";
-        case bit_and:      return "&";
-        case bit_or:       return "|";
-        case logical_and:  return "&&";
-        case logical_or:   return "||";
-        case logical_not:  return "!";
-        case bit_not:      return "~";
-        default:           return "?";
+        case modulo:       return "%";
+        case plus_assign:        return "+";
+        case minus_assign:       return "-";
+        case multiply_assign:    return "*";
+        case divide_assign:      return "/";
+        case modulo_assign:      return "%";
+        case bit_and_assign:     return "&";
+        case bit_or_assign:      return "|";
+        case bit_xor_assign:     return "^";
+        case shift_left_assign:  return "<<";
+        case shift_right_assign: return ">>";
+        case equals:             return "==";
+        case dont_equal:         return "!=";
+        case greater_than:       return ">";
+        case lesser_than:        return "<";
+        case greater_or_equal:   return ">=";
+        case lesser_or_equal:    return "<=";
+        case shift_left:         return "<<";
+        case shift_right:        return ">>";
+        case bit_xor:            return "^";
+        case bit_and:            return "&";
+        case bit_or:             return "|";
+        case logical_and:        return "&&";
+        case logical_or:         return "||";
+        case logical_not:        return "!";
+        case bit_not:            return "~";
+        default:                 return "?";
     }
 }
 
@@ -208,6 +224,10 @@ AN* parse_primary(struct file* file) {
         case number:
             advance(file);
             return make_ast_number(t->number.val);
+
+        case float_number:
+            advance(file);
+            return make_ast_float_number(t->float_number.val);
 
         case string:
             advance(file);
@@ -273,9 +293,20 @@ AN* parse_postfix(struct file* file) {
     return node;
 }
 
+static AN* parse_explicit_call(struct file* file) {
+    AN* call = parse_assign_target(file);
+    if (!call || call->type != AST_CALL) return 0;
+    return call;
+}
+
 AN* parse_unary(struct file* file) {
     Token* t = peek(file);
     if (is_eof(t)) return 0;
+
+    if (t->kind == call_keyword) {
+        advance(file);
+        return parse_explicit_call(file);
+    }
 
     if (t->kind == minus || t->kind == plus ||
         t->kind == logical_not || t->kind == bit_not) {
@@ -304,9 +335,42 @@ AN* parse_unary(struct file* file) {
         return left;                                  \
     }
 
-BIN_LEVEL(parse_mul,  parse_unary, multiply,     divide)
+AN* parse_mul(struct file* file) {
+    AN* left = parse_unary(file);
+    if (!left) return 0;
+    for (;;) {
+        Token* t = peek(file);
+        if (is_eof(t)) break;
+        if (t->kind != multiply && t->kind != divide && t->kind != modulo)
+            break;
+        int k = t->kind;
+        advance(file);
+        AN* right = parse_unary(file);
+        left = make_ast_binop(op_str(k), left, right);
+    }
+    return left;
+}
+
 BIN_LEVEL(parse_add,  parse_mul,   plus,         minus)
-BIN_LEVEL(parse_rel,  parse_add,   lesser_than,  greater_than)
+BIN_LEVEL(parse_shift, parse_add,  shift_left,   shift_right)
+
+AN* parse_rel(struct file* file) {
+    AN* left = parse_shift(file);
+    if (!left) return 0;
+    for (;;) {
+        Token* t = peek(file);
+        if (is_eof(t)) break;
+        if (t->kind != lesser_than && t->kind != greater_than &&
+            t->kind != lesser_or_equal && t->kind != greater_or_equal)
+            break;
+        int k = t->kind;
+        advance(file);
+        AN* right = parse_shift(file);
+        left = make_ast_binop(op_str(k), left, right);
+    }
+    return left;
+}
+
 BIN_LEVEL(parse_eq,   parse_rel,   equals,       dont_equal)
 BIN_LEVEL(parse_band, parse_eq,    bit_and,      bit_and)
 BIN_LEVEL(parse_bxor, parse_band,  bit_xor,      bit_xor)
@@ -323,6 +387,24 @@ AN* parse_assign_target(struct file* file) {
     Token* id = peek(file);
     if (is_eof(id) || id->kind != identifier) return 0;
     return parse_postfix(file);
+}
+
+static int is_compound_assign(int kind) {
+    switch (kind) {
+        case plus_assign:
+        case minus_assign:
+        case multiply_assign:
+        case divide_assign:
+        case modulo_assign:
+        case bit_and_assign:
+        case bit_or_assign:
+        case bit_xor_assign:
+        case shift_left_assign:
+        case shift_right_assign:
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 AN* parse_gen_assign(struct file* file) {
@@ -359,6 +441,12 @@ AN* parse_gen_assign(struct file* file) {
     if (!lhs) return 0;
 
     Token* eq = peek(file);
+    if (!is_eof(eq) && is_compound_assign(eq->kind)) {
+        int k = eq->kind;
+        advance(file);
+        AN* rhs = parse_expr(file);
+        return make_ast_nassign(lhs, make_ast_binop(op_str(k), lhs, rhs));
+    }
     if (is_eof(eq) || eq->kind != assign) {
         if (lhs->type == AST_CALL) return lhs;
         return 0;
@@ -513,6 +601,10 @@ AN* parse_statement(struct file* file) {
             advance(file);
             return parse_while(file);
         }
+        case call_keyword: {
+            advance(file);
+            return parse_explicit_call(file);
+        }
         default:
             return parse_gen_assign(file);
     }
@@ -548,6 +640,11 @@ static AN* parse_statement_verbose(struct file* file) {
             advance(file);
             LOGI("stmt: whl");
             return parse_while(file);
+        }
+        case call_keyword: {
+            advance(file);
+            LOGI("stmt: call");
+            return parse_explicit_call(file);
         }
         default:
             return parse_gen_assign_verbose(file);
@@ -688,10 +785,13 @@ void dump_ast(AN* node, int indent) {
             printf("value: %u\n", node->number.value);
             break;
 
-        case AST_FL_NUMBER:
+        case AST_FL_NUMBER: {
+            char fbuf[64];
+            format_float(fbuf, node->float_number_node.float_num);
             dump_indent(indent + 1);
-            printf("float_num: \"%s\"\n", node->float_number_node.float_num);
+            printf("float_num: \"%s\"\n", fbuf);
             break;
+        }
 
         case AST_STRING:
             dump_indent(indent + 1);
@@ -867,6 +967,16 @@ AN* parse_gen_assign_verbose(struct file* file) {
     }
 
     Token* eq = peek(file);
+    if (!is_eof(eq) && is_compound_assign(eq->kind)) {
+        int k = eq->kind;
+        advance(file);
+        LOGI("gen_assign: compound operator \"%s\"", op_str(k));
+        AN* rhs = parse_expr(file);
+        LOGI("gen_assign: rhs type=%s",
+             rhs ? ast_type_name(rhs->type) : "<null>");
+        LOGI("gen_assign: done, node type=%s", "AST_EXPR_ASSIGN");
+        return make_ast_nassign(lhs, make_ast_binop(op_str(k), lhs, rhs));
+    }
     if (is_eof(eq) || eq->kind != assign) {
         if (lhs->type == AST_CALL) {
             LOGI("gen_assign: done, node type=%s", "AST_CALL");

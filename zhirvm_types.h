@@ -147,13 +147,28 @@ typedef enum {
     left_brace,
     right_brace,
     assign,
+    plus_assign,
+    minus_assign,
+    multiply_assign,
+    divide_assign,
+    modulo_assign,
+    bit_and_assign,
+    bit_or_assign,
+    bit_xor_assign,
+    shift_left_assign,
+    shift_right_assign,
     equals,
     greater_than,
     lesser_than,
+    greater_or_equal,
+    lesser_or_equal,
     plus,
     minus,
     multiply,
     divide,
+    modulo,
+    shift_left,
+    shift_right,
     bit_xor,
     bit_not,
     bit_and,
@@ -162,6 +177,7 @@ typedef enum {
     dot,
     colon,
     number,
+    float_number,
     string,
     token_eof
 } ZhirVMTokens;
@@ -171,6 +187,7 @@ typedef struct Token {
 
     union {
         struct { int  val; }          number;
+        struct { float val; }         float_number;
         struct { char* name; }        identifier;
         struct { char* val;  }        string;
         struct { int  kind; }         keyword;

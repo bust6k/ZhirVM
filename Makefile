@@ -6,7 +6,7 @@ BUILDDIR := ../build
 MODDIR   := ../ramdisk
 
 CFLAGS  := -m32 -fno-stack-protector -ffreestanding -O0 -fPIC -fno-common -w
-LDFLAGS := -m elf_i386 -T ../module.ld
+LDFLAGS := -m elf_i386 -T ../ld/module.ld
 
 SRCS := $(wildcard *.c)
 OBJS := $(patsubst %.c,$(BUILDDIR)/%.o,$(SRCS))

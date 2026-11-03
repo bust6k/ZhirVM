@@ -67,13 +67,41 @@ static void env_bind(Map* env, char* name, Value v) {
     env_set(env, name, slot);
 }
 
+typedef struct BuiltinFn {
+    char* name;
+    Value (*fn)(Vector*);
+} BuiltinFn;
+
+static BuiltinFn builtin_table[] = {
+    {"print",   printb},
+    {"println", printlnb},
+    {"len",     lenb},
+    {"type",    typeb},
+    {"str",     strb},
+    {"int",     intb},
+    {"float",   floatb},
+    {"fp",      floatb},
+    {"abs",     absb},
+    {"min",     minb},
+    {"max",     maxb},
+    {"chr",     chrb},
+    {"ord",     ordb},
+};
+
 static int is_builtin(char* name) {
-    return name && !strcmp(name, "print");
+    if (!name) return 0;
+
+    for (int i = 0; i < (int)(sizeof(builtin_table) / sizeof(builtin_table[0])); i++)
+        if (!strcmp(name, builtin_table[i].name)) return 1;
+    return 0;
 }
 
 static Value call_builtin(char* name, Vector* args) {
-    if (name && !strcmp(name, "print")) return printb(args);
+    if (!name) return make_none();
 
+    for (int i = 0; i < (int)(sizeof(builtin_table) / sizeof(builtin_table[0])); i++)
+        if (!strcmp(name, builtin_table[i].name))
+            return builtin_table[i].fn(args);
     return make_none();
 }
 
@@ -122,6 +150,8 @@ static Value eval_binop(Value l, Value r, const char* op) {
         }
         if (!strcmp(op, "<")) return make_u32(a < b);
         if (!strcmp(op, ">")) return make_u32(a > b);
+        if (!strcmp(op, "<=")) return make_u32(a <= b);
+        if (!strcmp(op, ">=")) return make_u32(a >= b);
         return make_none();
     }
 
@@ -135,8 +165,16 @@ static Value eval_binop(Value l, Value r, const char* op) {
             if (!b) return make_none();
             return make_u32(a / b);
         }
+        if (!strcmp(op, "%")) {
+            if (!b) return make_none();
+            return make_u32(a % b);
+        }
         if (!strcmp(op, "<")) return make_u32(a < b);
         if (!strcmp(op, ">")) return make_u32(a > b);
+        if (!strcmp(op, "<=")) return make_u32(a <= b);
+        if (!strcmp(op, ">=")) return make_u32(a >= b);
+        if (!strcmp(op, "<<")) return make_u32(b >= 32 ? 0 : a << b);
+        if (!strcmp(op, ">>")) return make_u32(b >= 32 ? 0 : a >> b);
         if (!strcmp(op, "^")) return make_u32(a ^ b);
         if (!strcmp(op, "&")) return make_u32(a & b);
         if (!strcmp(op, "|")) return make_u32(a | b);
@@ -331,10 +369,8 @@ static Value eval(AN* node) {
                 }
             }
 
-            if (is_builtin(name)) {
-                if (vec_len(argv) == 0) return make_none();
+            if (is_builtin(name))
                 return call_builtin(name, argv);
-            }
             return call_user(name, argv);
         }
 
@@ -345,14 +381,16 @@ static Value eval(AN* node) {
 
 
 void interpret(Vector* program) {
+    LOGI("reac\n");
     if (!program) return;
-
+    LOGW("FFOO\n");
     globals = make_map();
     functions = make_map();
     retval = make_none();
 
     for (int i = 0; i < vec_len(program); i++) {
         Control c = exec((AN*)vec_get(program, i));
-        if (c == CTRL_RETURN) break;
+        LOGI("we also there\n");
+	if (c == CTRL_RETURN) break;
     }
 }

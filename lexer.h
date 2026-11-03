@@ -17,10 +17,11 @@ extern char* buf;
 
 int is_digit(char digit);
 int is_alpha(int c);
-int is_space(char c);
+int is_sspace(char c);
 int is_number_buf(char* buf);
 int is_identifier_buf(char* buf);
 int sti(char* buf);
+float stf(char* buf);
 
 
 void init_string(struct file* file);
@@ -30,6 +31,7 @@ char* get_identifier(char* buf);
 
 
 Token* make_token_number(int val);
+Token* make_token_float_number(float val);
 Token* make_token_identifier(char* name);
 Token* make_token_string(char* val);
 Token* make_token_keyword(int kind);

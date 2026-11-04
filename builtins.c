@@ -143,13 +143,43 @@ static int builtin_parse_int(char* str, u32* out) {
     return 1;
 }
 
+static void builtin_print_value(Value* v) {
+    if (!v) return;
+
+    switch (v->kind) {
+        case VAL_STRING:
+            printf("%s", v->s ? v->s : "");
+            break;
+        case VAL_U32:
+            printf("%u", v->u);
+            break;
+        case VAL_FLOAT: {
+            char buf[64];
+            format_float(buf, v->f);
+            printf("%s", buf);
+            break;
+        }
+        case VAL_NONE:
+            printf("%s", "none");
+            break;
+        default:
+            break;
+    }
+}
+
 Value printb(Vector* args){
     Value none; none.kind = VAL_NONE; none.u = 0;
 
     if (!args || vec_len(args) < 1) return none;
 
     Value* fmtv = (Value*)vec_get(args, 0);
-    if (fmtv->kind != VAL_STRING || !fmtv->s) return none;
+    if (fmtv->kind != VAL_STRING || !fmtv->s) {
+        for (int i = 0; i < vec_len(args); i++) {
+            if (i) printf("%c", ' ');
+            builtin_print_value((Value*)vec_get(args, i));
+        }
+        return none;
+    }
 
     char* fmt = fmtv->s;
     int argi = 1;

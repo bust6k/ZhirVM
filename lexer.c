@@ -246,7 +246,7 @@ static Token* classify_word(char* w) {
     else if(!strcmp(w,"udp")) return make_token_keyword(udp_keyword);
     else if(!strcmp(w,"whl")) return make_token_keyword(while_keyword);
     else if(!strcmp(w,"else")) return make_token_keyword(else_keyword);
-    else if(!strcmp(w,"ret")) return make_token_keyword(return_keyword);
+    else if(!strcmp(w,"ret") || !strcmp(w,"return")) return make_token_keyword(return_keyword);
     else if(!strcmp(w,"var")) return make_token_keyword(var_keyword);
     else if(!strcmp(w,"varar")) return make_token_keyword(varar_keyword);
     else if(!strcmp(w,"call")) return make_token_keyword(call_keyword);
@@ -282,10 +282,12 @@ Token* do_lex(void) {
             continue;
         }
         
-	if( c == '/' && buf[1] == '*') {
-        while( *buf && *buf  != '*' && *++buf != '/') buf++;
-	continue;
-	}
+        if (c == '/' && buf[1] == '*') {
+            buf += 2;
+            while (*buf && !(*buf == '*' && buf[1] == '/')) buf++;
+            if (*buf) buf += 2;
+            continue;
+        }
 
         if (c == '"') {
             buf++;
@@ -428,8 +430,9 @@ Token* do_lex(void) {
     }
 }
 
+static int loaded = 0;
+
 Token* lex(struct file* file) {
-    static int loaded = 0;
     if (!loaded) {
         init_string(file);
         loaded = 1;
@@ -442,8 +445,15 @@ INIT void init(void* _resolve_function(char* name)) {
     printf = _resolve_function("_printf");
     print_color = _resolve_function("_print_color");
     open = _resolve_function("_open");
+
+    loaded = 0;
+    read_count = 0;
+    buf = 0;
+    nodes = 0;
+
     struct file* foo = open('A',"./vmeste_mi_edynyi.zo");
-    parse_verbose(foo);
+    if (!foo) return;
+    parse(foo);
     interpret(nodes);
    }
 

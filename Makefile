@@ -14,7 +14,7 @@ OBJS := $(patsubst %.c,$(BUILDDIR)/%.o,$(SRCS))
 ELF := $(BUILDDIR)/module.elf
 MOD := $(MODDIR)/za_russia.mod
 
-.PHONY: all module kernel run clean
+.PHONY: all module kernel run test clean
 
 all: kernel run
 
@@ -25,6 +25,9 @@ kernel: module
 
 run:
 	cd .. && qemu-system-x86_64 -hda test.img -m 3064 -full-screen
+
+test:
+	./tests/run_tests.sh
 
 $(BUILDDIR)/%.o: %.c | $(BUILDDIR)
 	$(CC) $(CFLAGS) -c $< -o $@

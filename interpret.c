@@ -67,42 +67,42 @@ static void env_bind(Map* env, char* name, Value v) {
     env_set(env, name, slot);
 }
 
-typedef struct BuiltinFn {
-    char* name;
-    Value (*fn)(Vector*);
-} BuiltinFn;
-
-static BuiltinFn builtin_table[] = {
-    {"print",   printb},
-    {"println", printlnb},
-    {"len",     lenb},
-    {"type",    typeb},
-    {"str",     strb},
-    {"int",     intb},
-    {"float",   floatb},
-    {"fp",      floatb},
-    {"abs",     absb},
-    {"min",     minb},
-    {"max",     maxb},
-    {"chr",     chrb},
-    {"ord",     ordb},
-};
-
-static int is_builtin(char* name) {
+static int builtin_id(char* name) {
     if (!name) return 0;
 
-    for (int i = 0; i < (int)(sizeof(builtin_table) / sizeof(builtin_table[0])); i++)
-        if (!strcmp(name, builtin_table[i].name)) return 1;
+    if (!strcmp(name, "print"))   return 1;
+    if (!strcmp(name, "println")) return 2;
+    if (!strcmp(name, "len"))     return 3;
+    if (!strcmp(name, "type"))    return 4;
+    if (!strcmp(name, "str"))     return 5;
+    if (!strcmp(name, "int"))     return 6;
+    if (!strcmp(name, "float"))   return 7;
+    if (!strcmp(name, "fp"))      return 8;
+    if (!strcmp(name, "abs"))     return 9;
+    if (!strcmp(name, "min"))     return 10;
+    if (!strcmp(name, "max"))     return 11;
+    if (!strcmp(name, "chr"))     return 12;
+    if (!strcmp(name, "ord"))     return 13;
     return 0;
 }
 
-static Value call_builtin(char* name, Vector* args) {
-    if (!name) return make_none();
-
-    for (int i = 0; i < (int)(sizeof(builtin_table) / sizeof(builtin_table[0])); i++)
-        if (!strcmp(name, builtin_table[i].name))
-            return builtin_table[i].fn(args);
-    return make_none();
+static Value call_builtin(int id, Vector* args) {
+    switch (id) {
+        case 1:  return printb(args);
+        case 2:  return printlnb(args);
+        case 3:  return lenb(args);
+        case 4:  return typeb(args);
+        case 5:  return strb(args);
+        case 6:  return intb(args);
+        case 7:  return floatb(args);
+        case 8:  return floatb(args);
+        case 9:  return absb(args);
+        case 10: return minb(args);
+        case 11: return maxb(args);
+        case 12: return chrb(args);
+        case 13: return ordb(args);
+        default: return make_none();
+    }
 }
 
 static Value eval_binop(Value l, Value r, const char* op) {
@@ -352,6 +352,7 @@ static Value eval(AN* node) {
 
         case AST_CALL: {
             AN* callee = node->call_node.name;
+
             if (!callee || callee->type != AST_IDENT) return make_none();
 
             char* name = callee->ident.name;
@@ -369,8 +370,10 @@ static Value eval(AN* node) {
                 }
             }
 
-            if (is_builtin(name))
-                return call_builtin(name, argv);
+            int id = builtin_id(name);
+            if (id)
+                return call_builtin(id, argv);
+
             return call_user(name, argv);
         }
 
@@ -381,16 +384,14 @@ static Value eval(AN* node) {
 
 
 void interpret(Vector* program) {
-    LOGI("reac\n");
     if (!program) return;
-    LOGW("FFOO\n");
+
     globals = make_map();
     functions = make_map();
     retval = make_none();
 
     for (int i = 0; i < vec_len(program); i++) {
         Control c = exec((AN*)vec_get(program, i));
-        LOGI("we also there\n");
-	if (c == CTRL_RETURN) break;
+        if (c == CTRL_RETURN) break;
     }
 }

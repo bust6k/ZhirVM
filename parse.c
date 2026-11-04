@@ -3,7 +3,7 @@
 #include "vector.h"
 #include "builtins.h"
 
-Vector* nodes;
+Vector* nodes = {0};
 
 
 AN* make_ast() {
@@ -236,6 +236,14 @@ AN* parse_primary(struct file* file) {
         case identifier:
             advance(file);
             return make_ast_ident(t->identifier.name);
+
+        case string_type:
+            advance(file);
+            return make_ast_ident("str");
+
+        case float_type:
+            advance(file);
+            return make_ast_ident("fp");
 
         case left_paren: {
             advance(file);
@@ -653,6 +661,7 @@ static AN* parse_statement_verbose(struct file* file) {
 
 
 void parse(struct file* file) {
+    _peek_token = 0;
     if (!nodes) nodes = make_vector();
     for (;;) {
         Token* t = peek(file);

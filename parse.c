@@ -137,10 +137,11 @@ AN* make_ast_index(AN* base, AN* index) {
     return n;
 }
 
-AN* make_ast_varar(char* name) {
+AN* make_ast_varar(char* name,AN* val) {
     AN* n = make_ast();
     n->type = AST_VARAR;
     n->varar.name = name;
+    n->varar.elems = val->varar.elems;
     return n;
 }
 
@@ -441,8 +442,12 @@ AN* parse_gen_assign(struct file* file) {
 
         Token* id = advance(file);
         if (!id || id->kind != identifier) return 0;
+        
+	Token* assign = advance(file);
+	if(!assign || assign->kind != assign) return 0;
 
-        return make_ast_varar(id->identifier.name);
+	AN* val = parse_expr(file);
+        return make_ast_varar(id->identifier.name,val);
     }
 
     AN* lhs = parse_assign_target(file);

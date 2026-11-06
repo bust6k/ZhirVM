@@ -84,6 +84,7 @@ typedef struct ASTNode {
         } index_node;
 
         struct {
+            Vector* elems;
             char* name;
         } varar;
     };

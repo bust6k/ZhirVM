@@ -223,7 +223,9 @@ static Control exec(AN* node) {
 
     switch (node->type) {
         case AST_VARAR:
-            //XXX: NOW IT MUST NOT BE IMPLEMENTED.
+            Value v;v.elems = node->varar.elems;
+
+	    env_bind(globals,node->varar.name,v);
             return CTRL_NONE;
 
         case AST_ASSIGN: {
@@ -239,7 +241,9 @@ static Control exec(AN* node) {
             if (target && target->type == AST_IDENT) {
                 env_bind(globals, target->ident.name, v);
             } else if (target && target->type == AST_INDEX) {
-                //XXX: arrays/indexing are not implemented yet
+                eval(node->index_node.base);
+		eval(node->index_node.index);
+		return CTRL_NONE;
             }
             return CTRL_NONE;
         }
@@ -307,7 +311,12 @@ static Value eval(AN* node) {
         case AST_STRING: {
             Value v; v.kind = VAL_STRING; v.s = node->string.value; return v;
         }
-
+        
+	case AST_VARAR: {
+        Value* v = env_get(globals,node->varar.name);
+	return v ? *v : make_none();
+	}
+	
         case AST_IDENT: {
             Value* v = env_get(globals, node->ident.name);
             return v ? *v : make_none();
@@ -346,7 +355,8 @@ static Value eval(AN* node) {
         }
 
         case AST_INDEX: {
-	    //XXX: NOW IT SHOULD'NT BE IMPLEMENTED
+	    eval(node->index_node.base);
+	    eval(node->index_node.index);
             return make_none();
         }
 

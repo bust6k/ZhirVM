@@ -9,6 +9,7 @@ typedef enum ValKind {
     VAL_U32,     // also covers u16/u8/bool (stored in u)
     VAL_FLOAT,
     VAL_STRING,
+    VAL_VARAR,
 } ValKind;
 
 typedef struct Value {
@@ -16,7 +17,8 @@ typedef struct Value {
     union {
         u32 u;            // integer   AND  bool too
         float f;
-        char* s;          
+        char* s; 
+	Vector* elems;
     };
 } Value;
 

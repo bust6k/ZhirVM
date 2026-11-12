@@ -4,6 +4,7 @@
 #include "../lib/zhirtypes.h"
 #include "../lib/string.h"
 #include "vector.h"
+#include "map.h"
 
 typedef struct ASTNode {
     int type;
@@ -87,6 +88,10 @@ typedef struct ASTNode {
             Vector* elems;
             char* name;
         } varar;
+	struct {
+        Map* properties;
+	char* name;
+	} class;
     };
 } ASTNode;
 
@@ -107,7 +112,8 @@ typedef enum ASTNodeKind {
     AST_CALL,
     AST_IDENT,
     AST_INDEX,
-    AST_VARAR
+    AST_VARAR,
+    AST_CLASS
 } ASTNodeKind;
 
 typedef enum {
@@ -134,6 +140,9 @@ typedef enum {
     u32_type,
     u16_type,
     u8_type,
+    i32_type,
+    i16_type,
+    i8_type
     bool_type,
     float_type,
     string_type,
@@ -182,6 +191,7 @@ typedef enum {
     string,
     token_eof
 } ZhirVMTokens;
+
 
 typedef struct Token {
     int kind;                

@@ -7,7 +7,7 @@
 
 //class_table is needed to determine if user defined type exists
 static Map* class_table = 0;
-
+//some stuff
 Vector* nodes = {0};
 
 AN* make_ast() {
